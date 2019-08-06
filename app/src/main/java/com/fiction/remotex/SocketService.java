@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -44,6 +46,7 @@ public class SocketService extends Service {
     private int heartbeat_count = 0;
     public String Password = "fiction";
     public Boolean connection_ack_received = false;
+    public DatagramSocket s = null;
 
     //not used as of now
     public String GetServerName() {
@@ -74,19 +77,43 @@ public class SocketService extends Service {
     }
 
     public void start_heartbeat_counting(){
-
         // check if exactly one service input_stream running  using logs.. keep counting indefinitely
         final Thread heartbeat_thread = new Thread() {
             @Override
             public void run() {
                 while (true) {
                     Log.e(this.getClass().toString(), heartbeat_count + " " + isconnected());
+                    udp_listener();
                     heartbeat_count++;
                     android.os.SystemClock.sleep(2000);
                 }
             }
         };
         heartbeat_thread.start();
+    }
+
+    public void udp_listener(){
+        String text;
+
+        int reciever_port = 2600;
+
+        byte[] message = new byte[1500];
+        DatagramPacket p = new DatagramPacket(message, message.length);
+        try{
+            if(s==null){
+                s = new DatagramSocket(reciever_port);
+            }
+            Log.e(s.toString(), ""+s.getLocalSocketAddress());
+            s.setSoTimeout(3000);
+            s.receive(p);
+            text = new String(message, 0, p.getLength());
+            Log.e("Udp tutorial","message:" + text);
+            s.close();
+
+        }catch (Exception e){
+            Log.e("errorudp ",e.getMessage());
+        }
+
     }
 
 
