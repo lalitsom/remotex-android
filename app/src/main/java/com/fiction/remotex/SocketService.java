@@ -23,10 +23,12 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Random;
 
 
 public class SocketService extends Service {
@@ -74,6 +76,7 @@ public class SocketService extends Service {
     public void onCreate() {
         super.onCreate();
         start_heartbeat_counting();
+        recieve_heartbeat();
     }
 
     public void start_heartbeat_counting(){
@@ -82,8 +85,9 @@ public class SocketService extends Service {
             @Override
             public void run() {
                 while (true) {
-                    Log.e(this.getClass().toString(), heartbeat_count + " " + isconnected());
-                    udp_listener();
+//                    Log.e(this.getClass().toString(), heartbeat_count + " " + isconnected());
+//                    udp_listener();
+//                    udp_sender();
                     heartbeat_count++;
                     android.os.SystemClock.sleep(2000);
                 }
@@ -92,28 +96,76 @@ public class SocketService extends Service {
         heartbeat_thread.start();
     }
 
-    public void udp_listener(){
-        String text;
+    public void recieve_heartbeat(){
+        final Thread recieve_heartbeat_thread = new Thread() {
+            @Override
+            public void run() {
+                while (true) {
+                    android.os.SystemClock.sleep(2000);
+                    Log.e("recieve ","heart");
+                    udp_receiver();
 
-        int reciever_port = 2600;
-
-        byte[] message = new byte[1500];
-        DatagramPacket p = new DatagramPacket(message, message.length);
-        try{
-            if(s==null){
-                s = new DatagramSocket(reciever_port);
+                }
             }
-            Log.e(s.toString(), ""+s.getLocalSocketAddress());
-            s.setSoTimeout(3000);
-            s.receive(p);
-            text = new String(message, 0, p.getLength());
-            Log.e("Udp tutorial","message:" + text);
-            s.close();
+        };
+        recieve_heartbeat_thread.start();
+    }
 
-        }catch (Exception e){
-            Log.e("errorudp ",e.getMessage());
+
+
+    public void udp_receiver(){
+        DatagramSocket dsocket=null;
+        try {
+            int port = 2600;
+
+            dsocket = new DatagramSocket(port);
+            dsocket.setBroadcast(true);
+            Log.e("getb ",dsocket.getBroadcast() + "");
+            byte[] buffer = new byte[2048];
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+                dsocket.setSoTimeout(1000);
+                dsocket.receive(packet);
+                String msg = new String(buffer, 0, packet.getLength());
+                Log.e("UDP packet received", msg + packet.getSocketAddress());
+
+                packet.setLength(buffer.length);
+
+        } catch (Exception e) {
+            Log.e("udp rec ",e.getMessage());
+        } finally {
+            if(dsocket!=null)
+            dsocket.close();
         }
+    }
 
+    public void udp_sender(){
+        Log.e("upd sender ","started");
+        if(!isconnected()){
+            return;
+        }
+        Log.e("upd sender ","connected");
+        int port = 2600;
+        int random_number = (int)(Math.random()*100);
+        String message = "IamAlive" + random_number;
+        DatagramSocket ds = null;
+        try {
+            ds = new DatagramSocket();
+            // IP Address below is the IP address of that Device where server socket is opened.
+            InetSocketAddress socketAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
+            InetAddress address = socketAddress.getAddress();
+            DatagramPacket dp;
+            dp = new DatagramPacket(message.getBytes(), message.length(), address, port);
+            ds.send(dp);
+            Log.e("upd sender ","sent " + message);
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e("error udp sent",e.getMessage());
+        } finally {
+            if (ds != null) {
+                ds.close();
+            }
+        }
     }
 
 
