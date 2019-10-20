@@ -34,19 +34,20 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Connect extends Activity {
 
     SocketService socketServiceObject;
     private int backpressed = 0;
-    private ArrayList<ClientScanResult> DevicesList;
+    private List<String> DevicesList = new ArrayList<String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_connect);
         getFileStoragePermission();
-        findConnectedDevices();
+        findAvailableDevices();
     }
 
     @Override
@@ -98,20 +99,56 @@ public class Connect extends Activity {
         super.onPause();
     }
 
-    public void findConnectedDevices() {
+//    public void findConnectedDevices() {
+//
+//        final WifiApManager wifiApManager = new WifiApManager(this);
+//
+//        // load connected devices list in background thread
+//        final Thread getConnectedDevices = new Thread() {
+//            @Override
+//            public void run() {
+//                try {
+//                    DevicesList = wifiApManager.getClientList(false);
+//                } catch (Exception e) {
+//
+//                }
+//
+//                runOnUiThread(new Runnable() {
+//                    public void run() {
+//                        try {
+//
+//                            if (DevicesList.size() > 0) {
+//                                ShowNoDeviceError(false);
+//                                showDevicesList();
+//                            } else {
+//                                ShowNoDeviceError(true); // show "no device error"
+//                                showDevicesList();
+//                            }
+//                        } catch (Exception e) {
+//                            Log.e(this.getClass().toString(), e.getMessage());
+//                        }
+//                    }
+//                });
+//            }
+//        };
+//
+//        // start the thread
+//        getConnectedDevices.start();
+//    }
 
-        final WifiApManager wifiApManager = new WifiApManager(this);
+
+
+    public void findAvailableDevices() {
 
         // load connected devices list in background thread
         final Thread getConnectedDevices = new Thread() {
             @Override
             public void run() {
                 try {
-                    DevicesList = wifiApManager.getClientList(false);
+                    DevicesList = socketServiceObject.getAvailableDevices();
                 } catch (Exception e) {
 
                 }
-
                 runOnUiThread(new Runnable() {
                     public void run() {
                         try {
@@ -136,13 +173,14 @@ public class Connect extends Activity {
     }
 
 
+
     public void showDevicesList() {
 
         String DevicesInfo[] = new String[DevicesList.size()];
 
         int index = 0;
-        for (ClientScanResult device : DevicesList) {
-            DevicesInfo[index] = device.getIpAddr() + ":";
+        for (String device : DevicesList) {
+            DevicesInfo[index] = device;
             index++;
         }
 
@@ -176,7 +214,7 @@ public class Connect extends Activity {
             View view = layoutInflater.inflate(R.layout.connect_list_layout, parent, false);
 
             String ip_host = getItem(position);
-
+            Log.e("iphost " ," " + ip_host);
             String hostName = ip_host.split(":")[1]; // host name
             String hostIP = ip_host.split(":")[0];
 
@@ -208,7 +246,7 @@ public class Connect extends Activity {
 
 
     public void Refreshlist_onclick(View v) {
-        findConnectedDevices();
+        findAvailableDevices();
     }
 
     public void ShowNoDeviceError(boolean noDeviceFound) {

@@ -36,6 +36,8 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 
@@ -57,6 +59,8 @@ public class SocketService extends Service {
     public String Password = "fiction";
     public Boolean connection_ack_received = false;
     public DatagramSocket s = null;
+
+    List<String> AvailableDevices = new ArrayList<String>();
 
     //not used as of now
     public String GetServerName() {
@@ -109,61 +113,46 @@ public class SocketService extends Service {
             @Override
             public void run() {
                 while (true) {
-
                     Log.e("recieve ","heart");
 //                    udp_receiver();
-                        udp_sender_broadcast();
+                        udp_receiver_broadcast();
                     android.os.SystemClock.sleep(2000);
                 }
             }
         };
         recieve_heartbeat_thread.start();
 
-
-
-        final Thread singlet = new Thread() {
-            @Override
-            public void run() {
-                    while (true){
-                    udp_receiver_broadcast();
-                    android.os.SystemClock.sleep(2000);
-                    }
-
-            }
-        };
-        singlet.start();
-
     }
 
-
-    public void udp_sender_broadcast(){
-        Log.e("Broadcast ","started");
-
-        StrictMode.ThreadPolicy policy = new   StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
-
-
-        DatagramSocket ds = null;
-        String message = "android message";
-        try {
-            ds = new DatagramSocket();
-            ds.setBroadcast(true);
-            InetAddress address = getBroadcastAddress();
-            DatagramPacket dp;
-            dp = new DatagramPacket(message.getBytes(), message.getBytes().length, address, 2600);
-            ds.send(dp);
-            Log.e("upd sender ", address.getHostAddress() + " sent " + message);
-        } catch (Exception e) {
-            Log.e("upd sender ", "error : " + e.getMessage());
-            e.printStackTrace();
-        }
-        finally {
-            if(ds!=null){
-                ds.close();
-            }
-
-        }
-    }
+//
+//    public void udp_sender_broadcast(){
+//        Log.e("Broadcast ","started");
+//
+//        StrictMode.ThreadPolicy policy = new   StrictMode.ThreadPolicy.Builder().permitAll().build();
+//        StrictMode.setThreadPolicy(policy);
+//
+//
+//        DatagramSocket ds = null;
+//        String message = "android message";
+//        try {
+//            ds = new DatagramSocket();
+//            ds.setBroadcast(true);
+//            InetAddress address = getBroadcastAddress();
+//            DatagramPacket dp;
+//            dp = new DatagramPacket(message.getBytes(), message.getBytes().length, address, 2600);
+//            ds.send(dp);
+//            Log.e("upd sender ", address.getHostAddress() + " sent " + message);
+//        } catch (Exception e) {
+//            Log.e("upd sender ", "error : " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//        finally {
+//            if(ds!=null){
+//                ds.close();
+//            }
+//
+//        }
+//    }
 
     public void udp_receiver_broadcast(){
         DatagramSocket socket = null;
@@ -172,15 +161,13 @@ public class SocketService extends Service {
             socket = new DatagramSocket(2601, InetAddress.getByName("0.0.0.0"));
             socket.setBroadcast(true);
             socket.setSoTimeout(4000);
-             Log.e("recieving ","please");
-                Log.e("recieving ","while");
-                //Receive a packet
                 byte[] recvBuf = new byte[15000];
                 DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);
+                AvailableDevices.clear();
                 socket.receive(packet);
-
                 String data = new String(packet.getData()).trim();
-                Log.e("suc", data);
+                AvailableDevices.add(packet.getAddress().getHostAddress()+":"+data);
+                Log.e("suc", data + packet.getSocketAddress());
 
         } catch (Exception  e) {
             e.printStackTrace();
@@ -194,83 +181,87 @@ public class SocketService extends Service {
         }
     }
 
+public List<String> getAvailableDevices(){
+    return AvailableDevices;
+}
 
 
-    InetAddress getBroadcastAddress() throws IOException {
-        WifiManager wifi = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
-        DhcpInfo dhcp = wifi.getDhcpInfo();
-        // handle null somehow
-
-        int broadcast = (dhcp.ipAddress & dhcp.netmask) | ~dhcp.netmask;
-        byte[] quads = new byte[4];
-        for (int k = 0; k < 4; k++)
-            quads[k] = (byte) ((broadcast >> k * 8) & 0xFF);
-        return InetAddress.getByAddress(quads);
-    }
-
-
-
-
-    public void udp_receiver(){
 //
-//        WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-//        WifiManager.MulticastLock multicastLock = wifi.createMulticastLock("multicastLock");
+//    InetAddress getBroadcastAddress() throws IOException {
+//        WifiManager wifi = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
+//        DhcpInfo dhcp = wifi.getDhcpInfo();
+//        // handle null somehow
 //
-//        multicastLock.setReferenceCounted(true);
-//        multicastLock.acquire();
+//        int broadcast = (dhcp.ipAddress & dhcp.netmask) | ~dhcp.netmask;
+//        byte[] quads = new byte[4];
+//        for (int k = 0; k < 4; k++)
+//            quads[k] = (byte) ((broadcast >> k * 8) & 0xFF);
+//        return InetAddress.getByAddress(quads);
+//    }
+
+
 //
-//        MulticastSocket msocket=null;
-        DatagramSocket ds=null;
-        try {
-            int port = 2601;
-           ds = new DatagramSocket(port);
-            byte[] buffer = new byte[2048];
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            ds.receive(packet);
-
-                String msg = new String(buffer, 0, packet.getLength());
-                Log.e("UDP packet received", msg + packet.getSocketAddress());
-
-                packet.setLength(buffer.length);
-
-        } catch (Exception e) {
-            Log.e("udp rec ",e.getMessage());
-        }
-        finally {
-            if(ds!=null){
-                ds.close();
-            }
-        }
-    }
-
-    public void udp_sender(){
-        Log.e("upd sender ","started");
-        if(!isconnected()){
-            return;
-        }
-        Log.e("upd sender ","connected");
-        int port = 2600;
-        int random_number = (int)(Math.random()*100);
-        String message = "IamAlive" + random_number;
-        DatagramSocket ds = null;
-        try {
-            ds = new DatagramSocket();
-            // IP Address below is the IP address of that Device where server socket is opened.
-            InetSocketAddress socketAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
-            InetAddress address = socketAddress.getAddress();
-            DatagramPacket dp;
-            dp = new DatagramPacket(message.getBytes(), message.length(), address, port);
-            ds.send(dp);
-            Log.e("upd sender ","sent " + message);
-        } catch (IOException e) {
-            e.printStackTrace();
-            Log.e("error udp sent",e.getMessage());
-        } finally {
-            if (ds != null) {
-                ds.close();
-            }
-        }
-    }
+//
+//    public void udp_receiver(){
+////
+////        WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+////        WifiManager.MulticastLock multicastLock = wifi.createMulticastLock("multicastLock");
+////
+////        multicastLock.setReferenceCounted(true);
+////        multicastLock.acquire();
+////
+////        MulticastSocket msocket=null;
+//        DatagramSocket ds=null;
+//        try {
+//            int port = 2601;
+//           ds = new DatagramSocket(port);
+//            byte[] buffer = new byte[2048];
+//            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+//            ds.receive(packet);
+//
+//                String msg = new String(buffer, 0, packet.getLength());
+//                Log.e("UDP packet received", msg + packet.getSocketAddress());
+//
+//                packet.setLength(buffer.length);
+//
+//        } catch (Exception e) {
+//            Log.e("udp rec ",e.getMessage());
+//        }
+//        finally {
+//            if(ds!=null){
+//                ds.close();
+//            }
+//        }
+//    }
+//
+//    public void udp_sender(){
+//        Log.e("upd sender ","started");
+//        if(!isconnected()){
+//            return;
+//        }
+//        Log.e("upd sender ","connected");
+//        int port = 2600;
+//        int random_number = (int)(Math.random()*100);
+//        String message = "IamAlive" + random_number;
+//        DatagramSocket ds = null;
+//        try {
+//            ds = new DatagramSocket();
+//            // IP Address below is the IP address of that Device where server socket is opened.
+//            InetSocketAddress socketAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
+//            InetAddress address = socketAddress.getAddress();
+//            DatagramPacket dp;
+//            dp = new DatagramPacket(message.getBytes(), message.length(), address, port);
+//            ds.send(dp);
+//            Log.e("upd sender ","sent " + message);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            Log.e("error udp sent",e.getMessage());
+//        } finally {
+//            if (ds != null) {
+//                ds.close();
+//            }
+//        }
+//    }
 
 
     public void recieveimage() throws IOException {
