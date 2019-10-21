@@ -72,6 +72,7 @@ public class Connect extends Activity {
                     showMenu();
                     Log.e("conn2 ", "Not connected" );
                 } else {
+                    findAvailableDevices();
                     Log.e("conn1 ", "Nots connected" );
                     //do nothing
                 }
@@ -145,6 +146,7 @@ public class Connect extends Activity {
             @Override
             public void run() {
                 try {
+                    Log.e("getting device list","");
                     DevicesList = socketServiceObject.getAvailableDevices();
                 } catch (Exception e) {
 
@@ -152,7 +154,6 @@ public class Connect extends Activity {
                 runOnUiThread(new Runnable() {
                     public void run() {
                         try {
-
                             if (DevicesList.size() > 0) {
                                 ShowNoDeviceError(false);
                                 showDevicesList();
@@ -171,7 +172,6 @@ public class Connect extends Activity {
         // start the thread
         getConnectedDevices.start();
     }
-
 
 
     public void showDevicesList() {

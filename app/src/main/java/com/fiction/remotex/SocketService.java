@@ -122,6 +122,18 @@ public class SocketService extends Service {
         };
         recieve_heartbeat_thread.start();
 
+
+        final Thread connected_heatbeats_thread = new Thread() {
+            @Override
+            public void run() {
+                while (true) {
+                   udp_sender();
+                    android.os.SystemClock.sleep(2000);
+                }
+            }
+        };
+        connected_heatbeats_thread.start();
+
     }
 
 //
@@ -163,10 +175,13 @@ public class SocketService extends Service {
             socket.setSoTimeout(4000);
                 byte[] recvBuf = new byte[15000];
                 DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);
-                AvailableDevices.clear();
+                //AvailableDevices.clear();
                 socket.receive(packet);
-                String data = new String(packet.getData()).trim();
-                AvailableDevices.add(packet.getAddress().getHostAddress()+":"+data);
+                String data = packet.getAddress().getHostAddress()+":"+ new String(packet.getData()).trim();
+                if(!AvailableDevices.contains(data)){
+                    AvailableDevices.add(data);
+                }
+
                 Log.e("suc", data + packet.getSocketAddress());
 
         } catch (Exception  e) {
@@ -234,34 +249,35 @@ public List<String> getAvailableDevices(){
 //        }
 //    }
 //
-//    public void udp_sender(){
-//        Log.e("upd sender ","started");
-//        if(!isconnected()){
-//            return;
-//        }
-//        Log.e("upd sender ","connected");
-//        int port = 2600;
-//        int random_number = (int)(Math.random()*100);
-//        String message = "IamAlive" + random_number;
-//        DatagramSocket ds = null;
-//        try {
-//            ds = new DatagramSocket();
-//            // IP Address below is the IP address of that Device where server socket is opened.
-//            InetSocketAddress socketAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
-//            InetAddress address = socketAddress.getAddress();
-//            DatagramPacket dp;
-//            dp = new DatagramPacket(message.getBytes(), message.length(), address, port);
-//            ds.send(dp);
-//            Log.e("upd sender ","sent " + message);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            Log.e("error udp sent",e.getMessage());
-//        } finally {
-//            if (ds != null) {
-//                ds.close();
-//            }
-//        }
-//    }
+    public void udp_sender(){
+        Log.e("upd sender ","started");
+        if(!isconnected()){
+            return;
+        }
+        Log.e("upd sender ","connected");
+        int port = 2600;
+        int random_number = (int)(Math.random()*100);
+        String message = "IamAlive" + random_number;
+        DatagramSocket ds = null;
+        try {
+            ds = new DatagramSocket();
+            ds.setSoTimeout(1000);
+            // IP Address below is the IP address of that Device where server socket is opened.
+            InetSocketAddress socketAddress = (InetSocketAddress) socket.getRemoteSocketAddress();
+            InetAddress address = socketAddress.getAddress();
+            DatagramPacket dp;
+            dp = new DatagramPacket(message.getBytes(), message.length(), address, port);
+            ds.send(dp);
+            Log.e("upd sender ","sent " + message);
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e("error udp sent",e.getMessage());
+        } finally {
+            if (ds != null) {
+                ds.close();
+            }
+        }
+    }
 
 
     public void recieveimage() throws IOException {
