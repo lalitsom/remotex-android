@@ -9,6 +9,7 @@ import android.net.DhcpInfo;
 import android.net.IpSecManager;
 import android.net.wifi.WifiManager;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
@@ -434,7 +435,9 @@ public List<String> getAvailableDevices(){
                     }
                     output_writer.flush();
                 } else {
-                    Log.e(this.getClass().toString(),"output writer input_stream null");
+                    Log.e(this.getClass().toString(),"output writer input_stream null... disconnecting");
+                    check_connection();
+
                 }
             }
         };
@@ -471,6 +474,8 @@ public List<String> getAvailableDevices(){
     public void show_connect_activity(){
         Intent dialogIntent = new Intent(this, Connect.class);
         dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        //Add the bundle to the intent
+        dialogIntent.putExtra("toast_msg","Disconnected!");
         this.startActivity(dialogIntent);
     }
 

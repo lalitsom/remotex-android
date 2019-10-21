@@ -46,6 +46,10 @@ public class Connect extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_connect);
+        String msg = this.getIntent().getStringExtra("toast_msg");
+        if(msg!=null){
+            Toast.makeText(Connect.this, msg, Toast.LENGTH_SHORT).show();
+        }
         getFileStoragePermission();
         findAvailableDevices();
     }
@@ -197,6 +201,7 @@ public class Connect extends Activity {
                         value = value.substring(0, value.indexOf(':'));
                         TextInputEditText edit_IP = (TextInputEditText) findViewById(R.id.edit_IP);
                         edit_IP.setText(value);
+                        Connect_onclick(findViewById(R.id.edit_IP));
                     }
                 }
         );
@@ -283,16 +288,15 @@ public class Connect extends Activity {
     }
 
     public void Show_prompt(){
-
         AlertDialog.Builder pwd_builder = new AlertDialog.Builder(this);
         AlertDialog pwd_dialog;
         LayoutInflater inflater = LayoutInflater.from(this);
         final View prompt_view = inflater.inflate(R.layout.password_prompt,null);
+        final EditText pwd = (EditText)prompt_view.findViewById(R.id.password);
         pwd_builder.setView(prompt_view)
                 .setPositiveButton("Connect", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
-                        EditText pwd = (EditText)prompt_view.findViewById(R.id.password);
                           socketServiceObject.Password = (pwd.getText().toString()).trim();
                           tryConnect();
                     }
@@ -306,6 +310,9 @@ public class Connect extends Activity {
 
         pwd_dialog = pwd_builder.create();
         pwd_dialog.show();
+        if(pwd!=null){
+            pwd.requestFocus();
+        }
 
     }
 
