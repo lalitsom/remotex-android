@@ -25,7 +25,7 @@ public class Encryption {
             SecretKeySpec secretKeySpec = new SecretKeySpec(finalIvs, "AES");
             cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec,ivps);
             byte[] tmp =  cipher.doFinal(data);
-            return Base64.encodeToString(tmp,Base64.CRLF);
+            return Base64.encodeToString(tmp,Base64.NO_WRAP);
         } catch (Exception e) {
             Log.e("encryption error ",e.getMessage());
             e.printStackTrace();
@@ -35,7 +35,8 @@ public class Encryption {
 
     public static String decrypt(String emsg, String plainkey) {
         try {
-            byte[] data =  Base64.decode(emsg,Base64.CRLF) ;
+            Log.e("dec " ,emsg);
+            byte[] data =  Base64.decode(emsg,Base64.NO_WRAP) ;
             byte[] key = plainkey.getBytes(StandardCharsets.UTF_8);
             Cipher cipher = Cipher.getInstance("AES/CBC/ISO10126Padding");
 

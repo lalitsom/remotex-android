@@ -626,6 +626,8 @@ public List<String> getAvailableDevices(){
         Log.e("sentmessage ", msg);
         String Encrypted_msg =  Encryption.encrypt(msg,Password);
         Log.e("sentcryptmessage ", Encrypted_msg);
+        String Dmsg = Encryption.decrypt(Encrypted_msg,Password);
+        Log.e("sentcry sanity ", Dmsg);
         output_writer.println(Encrypted_msg);
     }
 
